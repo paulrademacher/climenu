@@ -1,6 +1,5 @@
 package climenu
 
-import "fmt"
 import "github.com/pkg/term"
 
 func getChar() (ascii int, keyCode int, err error) {
