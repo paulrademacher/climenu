@@ -1,7 +1,9 @@
 package climenu
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/buger/goterm"
 	"github.com/pkg/term"
@@ -178,7 +180,7 @@ func (m *Menu) Render() {
 		fmt.Println(m.Heading)
 	}
 
-	fmt.Printf("[%s] %s:\n", goterm.Color("?", goterm.GREEN), m.Question)
+	fmt.Printf("%s %s:\n", goterm.Color("?", goterm.GREEN), goterm.Bold(m.Question))
 
 	m.DrawMenuItems(false)
 
@@ -271,4 +273,26 @@ func (m *Menu) RunInternal() (results []string, escape bool) {
 			m.CursorUp()
 		}
 	}
+}
+
+func GetText(message string, defaultText string) string {
+	defaultTextMessage := ""
+	if defaultText != "" {
+		defaultTextMessage = " [" + defaultText + "]"
+	}
+	fmt.Printf("%s %s%s: ", goterm.Color("?", goterm.GREEN), goterm.Bold(message),
+		defaultTextMessage)
+
+	reader := bufio.NewReader(os.Stdin)
+	text, _ := reader.ReadString('\n')
+
+	if text[len(text)-1] == '\n' {
+		text = text[:len(text)-1]
+	}
+
+	if text == "" {
+		text = defaultText
+	}
+
+	return text
 }

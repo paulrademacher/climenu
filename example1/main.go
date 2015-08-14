@@ -31,4 +31,7 @@ func main() {
 	if !escaped {
 		fmt.Println("selected >", selection)
 	}
+
+	response := climenu.GetText("Say something interesting", "hi")
+	fmt.Printf("text > \"%s\"\n", response)
 }
