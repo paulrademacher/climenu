@@ -7,38 +7,63 @@ import (
 	"github.com/pkg/term"
 )
 
+type MenuItem struct {
+	Text     string
+	ID       string
+	SubMenu  *Menu
+	Selected bool  // For checkboxes.
+}
+
 const (
-	ActionItem = iota
-	CheckboxItem
+	ButtonType = iota
+	CheckboxType
 )
 
-type MenuItem struct {
-	Text    string
-	ID      string
-	Type    int
-	SubMenu *Menu
-}
-
 type Menu struct {
-	Heading        string
-	Question       string
-	CursorPos      int
-	MenuItems      []*MenuItem
+	Type      int
+	Heading   string
+	Question  string
+	CursorPos int
+	MenuItems []*MenuItem
 }
 
-func NewMenu(heading string, question string) *Menu {
+type CheckboxMenu struct {
+	Menu
+	Yes string
+	No  string
+}
+
+type ButtonMenu struct {
+	Menu
+}
+
+func NewMenu(heading string, question string, menuType int) *Menu {
 	return &Menu{
-		MenuItems:      make([]*MenuItem, 0),
-		Heading:        heading,
-		Question:       question,
+		MenuItems: make([]*MenuItem, 0),
+		Heading:   heading,
+		Question:  question,
+		Type:      menuType,
 	}
 }
 
-func (m *Menu) AddMenuItem(text string, id string, itemType int) *MenuItem {
+func NewButtonMenu(heading string, question string) *ButtonMenu {
+	return &ButtonMenu{
+		Menu: *NewMenu(heading, question, ButtonType),
+	}
+}
+
+func NewCheckboxMenu(heading string, question string, yes string, no string) *CheckboxMenu {
+	return &CheckboxMenu{
+		Menu: *NewMenu(heading, question, CheckboxType),
+		Yes:  yes,
+		No:   no,
+	}
+}
+
+func (m *Menu) AddMenuItem(text string, id string) *MenuItem {
 	menuItem := &MenuItem{
 		Text: text,
 		ID:   id,
-		Type: itemType,
 	}
 
 	m.MenuItems = append(m.MenuItems, menuItem)
@@ -53,6 +78,16 @@ func (m *Menu) CursorDown() {
 
 func (m *Menu) CursorUp() {
 	m.CursorPos = (m.CursorPos + len(m.MenuItems) - 1) % len(m.MenuItems)
+	m.DrawMenuItems(true)
+}
+
+func (m *Menu) ToggleSelection() {
+	menuItem := m.MenuItems[m.CursorPos]
+	if menuItem.Selected {
+		menuItem.Selected = false
+	} else {
+		menuItem.Selected = true
+	}
 	m.DrawMenuItems(true)
 }
 
@@ -118,15 +153,24 @@ func (m *Menu) DrawMenuItems(redraw bool) {
 			newline = ""
 		}
 
-		t := fmt.Sprintf("%d: %s", index+1, menuItem.Text)
+		prefix := "  "
+		if m.Type == ButtonType {
+			prefix = fmt.Sprintf("%d: ", index + 1)
+		} else if m.Type == CheckboxType {
+			if menuItem.Selected {
+				prefix = "\u25c9 "
+			} else {
+				prefix = "\u25ef "
+			}
+		}
+
 		if index == m.CursorPos {
-			fmt.Printf("\r%s %s%s", goterm.Color(">", goterm.GREEN), t, newline)
+			cursor := goterm.Color("> ", goterm.CYAN)
+			fmt.Printf("\r%s%s %s%s", cursor, prefix, menuItem.Text, newline)
 		} else {
-			fmt.Printf("\r  %s%s", t, newline)
+			fmt.Printf("\r%s%s %s%s", "  ", prefix, menuItem.Text, newline)
 		}
 	}
-
-	//	fmt.Printf("\r")
 }
 
 func (m *Menu) Render() {
@@ -158,7 +202,17 @@ func (m *Menu) DumpIndent(indent int) {
 	}
 }
 
-func (m *Menu) Run() (result string, escape bool) {
+func (m *ButtonMenu) Run() (string, bool) {
+	results, escape := m.RunInternal()
+	return results[0], escape
+}
+
+func (m *CheckboxMenu) Run() ([]string, bool) {
+	results, escape := m.RunInternal()
+	return results, escape
+}
+
+func (m *Menu) RunInternal() (results []string, escape bool) {
 	defer func() {
 		// Show cursor.
 		fmt.Printf("\033[?25h")
@@ -171,15 +225,28 @@ func (m *Menu) Run() (result string, escape bool) {
 
 		if ascii == 3 || err != nil {
 			fmt.Println()
-			return "", true
+			return []string{""}, true
 		}
 
-		if ascii == 13 {
+		if m.Type == ButtonType && ascii == 13 {
 			fmt.Println()
-
 			menuItem := m.MenuItems[m.CursorPos]
+			return []string{menuItem.ID}, false
+		}
 
-			return menuItem.ID, false
+		if m.Type == CheckboxType {
+			if ascii == ' ' {
+				m.ToggleSelection()
+			} else if ascii == 13 {
+				selections := make([]string, 0)
+				for _, menuItem := range m.MenuItems {
+					if menuItem.Selected {
+						selections = append(selections, menuItem.ID)
+					}
+				}
+				fmt.Println()
+				return selections, false
+			}
 		}
 
 		const one = 49
@@ -194,7 +261,7 @@ func (m *Menu) Run() (result string, escape bool) {
 				fmt.Println()
 
 				menuItem := m.MenuItems[num]
-				return menuItem.ID, false
+				return []string{menuItem.ID}, false
 			}
 		}
 

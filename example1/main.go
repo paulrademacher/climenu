@@ -12,12 +12,23 @@ func callback(id string) {
 }
 
 func main() {
-	menu := climenu.NewMenu("Welcome", "Choose an action")
-	menu.AddMenuItem("Create entry", "create", climenu.ActionItem)
-	menu.AddMenuItem("Edit entry", "edit", climenu.ActionItem)
+	menu := climenu.NewButtonMenu("Welcome", "Choose an action")
+	menu.AddMenuItem("Create entry", "create")
+	menu.AddMenuItem("Edit entry", "edit")
 
 	action, escaped := menu.Run()
 	if !escaped {
-		fmt.Println("action>", action)
+		fmt.Println("action >", action)
+	}
+
+	checkbox := climenu.NewCheckboxMenu("Let's try some checkboxes",
+		"Select options", "OK", "Cancel")
+	checkbox.AddMenuItem("Apples", "apples")
+	checkbox.AddMenuItem("Oranges", "oranges")
+	checkbox.AddMenuItem("Bananas", "bananas")
+
+	selection, escaped := checkbox.Run()
+	if !escaped {
+		fmt.Println("selected >", selection)
 	}
 }
