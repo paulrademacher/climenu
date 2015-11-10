@@ -142,7 +142,7 @@ func (m *Menu) Render() {
 		fmt.Println(m.Heading)
 	}
 
-	fmt.Printf("%s %s:\n", goterm.Color("?", goterm.GREEN), goterm.Bold(m.Question))
+	fmt.Printf("%s\n", goterm.Color(goterm.Bold(m.Question) + ":", goterm.GREEN))
 
 	m.DrawMenuItems(false)
 
@@ -238,12 +238,16 @@ func (m *Menu) RunInternal() (results []string, escape bool) {
 }
 
 func GetText(message string, defaultText string) string {
-	defaultTextMessage := ""
+	fmt.Printf("%s", goterm.Color(goterm.Bold(message), goterm.GREEN))
+
 	if defaultText != "" {
-		defaultTextMessage = " [" + defaultText + "]"
+		fmt.Printf(" %s%s%s",
+			goterm.Color(goterm.Bold("["), goterm.GREEN),
+			goterm.Color(defaultText, goterm.YELLOW),
+			goterm.Color(goterm.Bold("]"), goterm.GREEN))
 	}
-	fmt.Printf("%s %s%s: ", goterm.Color("?", goterm.GREEN), goterm.Bold(message),
-		defaultTextMessage)
+
+	fmt.Printf("%s ", goterm.Color(goterm.Bold(":"), goterm.GREEN))
 
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
