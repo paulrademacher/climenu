@@ -7,4 +7,6 @@ Interactive menu system for golang command line programs.
 
 ## Example
 
+[![asciicast](https://asciinema.org/a/117529.png)](https://asciinema.org/a/117529)
+
 see [`example1/main.go`](example1/main.go)
